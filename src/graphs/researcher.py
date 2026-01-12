@@ -4,10 +4,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, END
 
 from src.core.state import GlobalState
+from src.core.config import llm
 from src.tools.search import TavilySearch
 
 # Initialize components
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
 search_tool = TavilySearch()
 
 def search_engine(state: GlobalState) -> Dict:
@@ -20,7 +20,7 @@ def search_engine(state: GlobalState) -> Dict:
     if len(query) > 100:
         # Ask LLM to extract query
         query_resp = llm.invoke(f"Extract a concise search query from this: {last_user_msg}")
-        query = query_resp.content
+        query = query_resp.text
         
     results = search_tool.search(query)
     
@@ -44,7 +44,7 @@ def grader(state: GlobalState) -> Dict:
     """
     
     response = llm.invoke(prompt)
-    decision = response.content.strip().upper()
+    decision = response.text.strip().upper()
     
     # We store the decision in a temporary key or infer it in the edge
     return {"_grader_decision": decision}
@@ -54,13 +54,17 @@ def drafter(state: GlobalState) -> Dict:
     messages = state["messages"]
     research = "\n\n".join(state["research_outputs"])
     
+    last_msg = messages[-1].content
+    if isinstance(last_msg, list):
+        last_msg = " ".join([block["text"] for block in last_msg if "text" in block])
+
     prompt = f"""
     You are a researcher. Answer the user's request based strictly on the following research.
     
     Research:
     {research}
     
-    User Request: {messages[-1].content}
+    User Request: {last_msg}
     """
     
     response = llm.invoke(prompt)

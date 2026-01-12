@@ -8,13 +8,14 @@ from src.graphs.planner import create_planner_graph
 from src.graphs.executor import create_executor_graph
 from src.graphs.researcher import create_researcher_graph
 
-# Initialize LLM
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
+from src.core.config import llm
 
 def router(state: GlobalState) -> Dict:
     """Node: Decides where to send the request."""
     messages = state["messages"]
     last_msg = messages[-1].content
+    if isinstance(last_msg, list):
+         last_msg = " ".join([block["text"] for block in last_msg if "text" in block])
     
     prompt = f"""
     Classify the following user request into one of these categories:
@@ -28,7 +29,7 @@ def router(state: GlobalState) -> Dict:
     """
     
     response = llm.invoke(prompt)
-    category = response.content.strip().upper()
+    category = response.text.strip().upper()
     
     # Simple mapping
     if "EXECUTE" in category:

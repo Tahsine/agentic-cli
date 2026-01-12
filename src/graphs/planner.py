@@ -7,8 +7,7 @@ from langgraph.prebuilt import ToolNode
 from src.core.state import GlobalState, PlanStep
 import json
 
-# Initialize LLM
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
+from src.core.config import llm
 
 PLANNER_PROMPT = """
 You are an expert technical planner for a CLI Agent.
@@ -46,7 +45,7 @@ def draft_plan(state: GlobalState) -> Dict:
     
     try:
         # Clean up potential markdown wrapper from LLM
-        content = response.content.replace("```json", "").replace("```", "").strip()
+        content = response.text.replace("```json", "").replace("```", "").strip()
         plan_data = json.loads(content)
         # Ensure default status
         for step in plan_data:
@@ -67,10 +66,14 @@ def plan_refiner(state: GlobalState) -> Dict:
     # The last message from the user contains the feedback
     messages = state["messages"]
     
+    last_msg_content = messages[-1].content
+    # Ideally human input is string, but being safe if needed, 
+    # though usage says strict 'HumanMessage' is string.
+    
     feedback_prompt = f"""
     The user rejected the previous plan. 
     Current Plan: {json.dumps(state['plan'])}
-    User Feedback: {messages[-1].content}
+    User Feedback: {last_msg_content}
     
     Update the plan accordingly. Return the full updated JSON array.
     """
@@ -81,7 +84,7 @@ def plan_refiner(state: GlobalState) -> Dict:
     ])
     
     try:
-        content = response.content.replace("```json", "").replace("```", "").strip()
+        content = response.text.replace("```json", "").replace("```", "").strip()
         plan_data = json.loads(content)
         for step in plan_data:
              if "status" not in step: step["status"] = "pending"

@@ -55,7 +55,12 @@ def display_output(state: dict):
         # Only show the last message which is the AI response
         last_msg = messages[-1]
         if hasattr(last_msg, 'content') and last_msg.type == 'ai':
-             console.print(Panel(Markdown(last_msg.content), title="Agent", border_style="green"))
+             text_content = last_msg.content
+             # Gemini 3 / LangChain compatibility
+             if hasattr(last_msg, "text") and last_msg.text:
+                  text_content = last_msg.text
+                  
+             console.print(Panel(Markdown(str(text_content)), title="Agent", border_style="green"))
 
     execution_history = state.get("execution_history", [])
     if execution_history:
@@ -115,12 +120,10 @@ def version():
 def start(
     session_id: str = typer.Argument("default", help="Name of the session"),
     dry_run: bool = typer.Option(False, help="Show plan without executing"),
-    message: str = typer.Option(None, "--message", "-m", help="Example: 'List files'")
+    # message: str = typer.Option(None, "--message", "-m", help="Example: 'List files'") # Commented out one-shot
 ):
     """
-    Start the Agentic CLI.
-    If --message is provided, runs once.
-    Otherwise, starts an interactive chat session.
+    Start the Agentic CLI in interactive mode.
     """
     session_manager = SessionManager()
     checkpointer = session_manager.get_checkpointer()
@@ -136,27 +139,23 @@ def start(
     console.print(f"[bold blue]Welcome to Agentic CLI (2g)[/bold blue]")
     console.print(f"Session: [cyan]{session_id}[/cyan]")
     
-    if message:
-        # Single run mode
-        process_turn(graph, message, config, dry_run)
-    else:
-        # Interactive mode
-        console.print("[dim]Type 'exit' or 'quit' to leave.[/dim]")
-        while True:
-            try:
-                user_input = Prompt.ask("\n[bold cyan]You[/bold cyan]")
-                if user_input.lower() in ["exit", "quit"]:
-                    console.print("Goodbye!")
-                    break
-                
-                if not user_input.strip():
-                    continue
-                    
-                process_turn(graph, user_input, config, dry_run)
-                
-            except KeyboardInterrupt:
-                console.print("\nExiting...")
+    # Interactive mode
+    console.print("[dim]Type 'exit' or 'quit' to leave.[/dim]")
+    while True:
+        try:
+            user_input = Prompt.ask("\n[bold cyan]You[/bold cyan]")
+            if user_input.lower() in ["exit", "quit"]:
+                console.print("Goodbye!")
                 break
+            
+            if not user_input.strip():
+                continue
+                
+            process_turn(graph, user_input, config, dry_run)
+            
+        except KeyboardInterrupt:
+            console.print("\nExiting...")
+            break
 
 if __name__ == "__main__":
     app()

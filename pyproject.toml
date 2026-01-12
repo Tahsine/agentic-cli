@@ -1,0 +1,32 @@
+[project]
+name = "agentic-cli"
+version = "0.1.0"
+description = "A robust, agentic CLI tool with Planner, Executor, and Researcher sub-graphs."
+authors = [
+    {name = "Your Name", email = "you@example.com"},
+]
+dependencies = [
+    "langgraph>=0.1.0",
+    "langchain>=0.2.0",
+    "langchain-google-genai>=1.0.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "tavily-python>=0.3.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "langgraph-checkpoint-sqlite>=1.0.0",
+    "langchain-community>=0.2.0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.scripts]
+2g = "src.cli.main:app"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
